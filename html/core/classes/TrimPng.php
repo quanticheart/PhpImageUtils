@@ -7,7 +7,7 @@ class TrimPng
 
     function __construct($path)
     {
-        $this->folder = dirname(__FILE__, 3) . "/output/trim/";
+        $this->folder = dirname(__FILE__, 3) . "/output/images/trim/";
         $this->createDir($this->folder);
         $file = $this->trimImage($path);
         echo "---- FINISH ---- $file" . "</br>";

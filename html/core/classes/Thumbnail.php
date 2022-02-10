@@ -83,7 +83,7 @@ class Thumbnail
         }
 
         if (false != $file) {
-            $this->path = dirname(__FILE__, 3) . "/output/thumbnail/";
+            $this->path = dirname(__FILE__, 3) . "/output/images/thumbnail/";
             $this->createDir($this->path);
             $this->filename = $this->getFileName($file);
             $this->filenameSmall = $this->getSmallFileName($file);

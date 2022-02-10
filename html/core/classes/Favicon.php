@@ -13,7 +13,7 @@ class Favicon
     /**
      * @var array $sizes Optional. An array of sizes (each size is an array with a width and height) that the source image should be rendered at in the generated ICO file. If sizes are not supplied, the size of the source image will be used.
      */
-    public array $sizes = array(16, 32, 48, 57, 64, 76, 96, 120, 128, 144, 152, 180, 192, 196, 228);
+    public array $sizes = array(16, 32, 36, 48, 57, 64, 70, 72, 76, 96, 120, 128, 144, 150, 152, 180, 192, 196, 228, 310);
     public int $maxIcoFileSize = 32;
 
     public string $filename = "favicon.ico"; // default init
@@ -28,10 +28,28 @@ class Favicon
         return $c[0] . ".ico";
     }
 
+    function getFileName()
+    {
+        $newDir = explode(".", $this->filename);
+        return $newDir[0];
+    }
+
     function getFileNamePng($size)
     {
         $newDir = explode(".", $this->filename);
         return $newDir[0] . "-$size.png";
+    }
+
+    function getFileNamePngManifest($size)
+    {
+        $newDir = explode(".", $this->filename);
+        return "\/images\/favicon\/$size\/" . $newDir[0] . "-$size.png";
+    }
+
+    function getFileNamePngXml($size)
+    {
+        $newDir = explode(".", $this->filename);
+        return "/images/favicon/$size/" . $newDir[0] . "-$size.png";
     }
 
     function getDirIco()
@@ -85,11 +103,15 @@ class Favicon
         }
 
         if (false != $file) {
-            $this->path = dirname(__FILE__, 3) . "/output/favicon/";
+            $this->path = dirname(__FILE__, 3) . "/output/images/favicon/";
             $this->createDir($this->path);
             $this->filename = $this->getFileNameIco($file);
-            $this->generateFavicon($file);
-            $this->printHtmlInsert();
+            $status = $this->generateFavicon($file);
+            if ($status) {
+                $this->createManifestJson();
+                $this->createMSXml();
+                $this->printHtmlInsert();
+            }
         }
     }
 
@@ -103,9 +125,16 @@ class Favicon
      *
      * @param string $file Path to the source image file.
      */
-    function generateFavicon($file)
+    function generateFavicon($file): bool
     {
         $im = $this->createIm($file);
+        $src_w = imagesx($im);
+        $src_h = imagesy($im);
+
+        if ($src_w > 256 || $src_h > 256) {
+            echo "ICO images cannot be larger than 256 pixels wide/tall in " . $this->filename . "<br>";
+            return false;
+        }
 
         foreach ($this->sizes as $size) {
             $width = $size;
@@ -117,13 +146,6 @@ class Favicon
             imagealphablending($new_im, false);
             imagesavealpha($new_im, true);
 
-            $src_w = imagesx($im);
-            $src_h = imagesy($im);
-
-            if ($src_w > 256 || $src_h > 256) {
-                trigger_error('ICO images cannot be larger than 256 pixels wide/tall', E_USER_WARNING);
-                die();
-            }
 
             if ($src_w > $src_h) {
                 $dst_w = $width;
@@ -162,6 +184,8 @@ class Favicon
         }
         imagedestroy($im);
         $this->saveIco();
+
+        return true;
     }
 
     function savePng($image, $filePath, $quality = 9, $filters = PNG_NO_FILTER)
@@ -317,59 +341,96 @@ class Favicon
 
     function printHtmlInsert()
     {
-        $generics = array();
-        $android = array();
-        $ios = array();
-        $windows = array();
+        echo '----Default ----------------------------------------------------------' . "</br>";
+        echo
+            htmlspecialchars('<link rel="apple-touch-icon" sizes="57x57" href="/apple-icon-57x57.png">') . "<br>" .
+            htmlspecialchars('<link rel="apple-touch-icon" sizes="60x60" href="/apple-icon-60x60.png">') . "<br>" .
+            htmlspecialchars('<link rel="apple-touch-icon" sizes="72x72" href="/apple-icon-72x72.png">') . "<br>" .
+            htmlspecialchars('<link rel="apple-touch-icon" sizes="76x76" href="/apple-icon-76x76.png">') . "<br>" .
+            htmlspecialchars('<link rel="apple-touch-icon" sizes="114x114" href="/apple-icon-114x114.png">') . "<br>" .
+            htmlspecialchars('<link rel="apple-touch-icon" sizes="120x120" href="/apple-icon-120x120.png">') . "<br>" .
+            htmlspecialchars('<link rel="apple - touch - icon" sizes="144x144" href=" / apple - icon - 144x144 . png">') . "<br>" .
+            htmlspecialchars('<link rel="apple - touch - icon" sizes="152x152" href=" / apple - icon - 152x152 . png">') . "<br>" .
+            htmlspecialchars('<link rel="apple-touch-icon" sizes="180x180" href="/apple-icon-180x180.png">') . "<br>" .
+            htmlspecialchars('<link rel="icon" type="image/png" sizes="192x192"  href="/android-icon-192x192.png">') . "<br>" .
+            htmlspecialchars('<link rel="icon" type="image / png" sizes="32x32" href=" / favicon - 32x32 . png">') . "<br>" .
+            htmlspecialchars('<link rel="icon" type="image / png" sizes="96x96" href=" / favicon - 96x96 . png">') . "<br>" .
+            htmlspecialchars('<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">') . "<br>" .
+            htmlspecialchars('<link rel="manifest" href="/manifest.json">') . "<br>" .
+            htmlspecialchars('<meta name="msapplication - TileColor" content="#ffffff">') . "<br>" .
+            htmlspecialchars('<meta name="msapplication-TileImage" content="/ms-icon-144x144.png">') . "<br>" .
+            htmlspecialchars('<meta name="theme - color" content="#ffffff">') . "<br>";
 
-        foreach ($this->sizes as $size) {
-            switch ($size) {
-                case 196:
-                    $android[] = $size;
-                    break;
-                case 120:
-                case 152:
-                case 180:
-                    $ios[] = $size;
-                    break;
-                case 144:
-                    $windows[] = $size;
-                    break;
-                default:
-                    $generics[] = $size;
-                    break;
-            }
-        }
+        echo '----FINISH ----------------------------------------------------------' . "</br>";
+    }
 
-        echo htmlspecialchars("<!-- default -->") . "</br>";
-        echo htmlspecialchars('<link rel="icon" href="/favicon/' . $this->filename . '" sizes="' . $this->maxIcoFileSize . 'x' . $this->maxIcoFileSize . '">') . "</br>";
-        echo "</br>";
+    function createManifestJson()
+    {
+        $this->createDir($this->path . "manifest/");
+        $fp = fopen($this->path . "manifest/" . $this->getFileName() . "Manifest.json", "a");
+        fwrite($fp, '{
+    "name": "App",
+ "icons": [
+  {
+      "src": "' . $this->getFileNamePngManifest("36") . '",
+   "sizes": "36x36",
+   "type": "image\/png",
+   "density": "0.75"
+  },
+  {
+      "src": "' . $this->getFileNamePngManifest("48") . '",
+   "sizes": "48x48",
+   "type": "image\/png",
+   "density": "1.0"
+  },
+  {
+      "src": "' . $this->getFileNamePngManifest("72") . '",
+   "sizes": "72x72",
+   "type": "image\/png",
+   "density": "1.5"
+  },
+  {
+      "src": "' . $this->getFileNamePngManifest("96") . '",
+   "sizes": "96x96",
+   "type": "image\/png",
+   "density": "2.0"
+  },
+  {
+      "src": "' . $this->getFileNamePngManifest("144") . '",
+   "sizes": "144x144",
+   "type": "image\/png",
+   "density": "3.0"
+  },
+  {
+      "src": "' . $this->getFileNamePngManifest("192") . '",
+   "sizes": "192x192",
+   "type": "image\/png",
+   "density": "4.0"
+  }
+ ]
+}');
+        fclose($fp);
+    }
 
-        echo htmlspecialchars("<!-- generics -->") . "</br>";
-        foreach ($generics as $size) {
-            echo htmlspecialchars('<link rel="icon" href="/favicon/' . $size . '/' . $this->getFileNamePng($size) . '" sizes="' . $size . 'x' . $size . '">') . "</br>";
-        }
-        echo "</br>";
-
-        echo htmlspecialchars("<!-- Android -->") . "</br>";
-        foreach ($android as $size) {
-            echo htmlspecialchars('<link rel="shortcut icon" sizes="' . $size . 'x' . $size . '" href="/favicon/' . $size . '/' . $this->getFileNamePng($size) . '">') . "</br>";
-        }
-        echo "</br>";
-
-        echo htmlspecialchars("<!-- iOS -->") . "</br>";
-        foreach ($ios as $size) {
-            echo htmlspecialchars('<link rel="apple-touch-icon" href="/favicon/' . $size . '/' . $this->getFileNamePng($size) . '" sizes="' . $size . 'x' . $size . '">') . "</br>";
-        }
-        echo "</br>";
-
-        echo htmlspecialchars("<!-- Windows 8 IE 10 -->") . "</br>";
-        echo htmlspecialchars('<meta name="msapplication-TileColor" content="#FFFFFF">') . "</br>";
-        foreach ($windows as $size) {
-            echo htmlspecialchars('<meta name="msapplication-TileImage" content="/favicon/' . $size . '/' . $this->getFileNamePng($size) . '">') . "</br>";
-        }
-        echo "</br>";
-
-        echo '---- FINISH ----------------------------------------------------------' . "</br>";
+    function createMSXml()
+    {
+        $this->createDir($this->path . "browserConfig/");
+        $fp = fopen($this->path . "browserConfig/" . $this->getFileName() . "-browserconfig.xml", "a");
+        fwrite($fp, '<?xml version = "1.0" encoding = "utf-8"?>
+<browserconfig>
+    <msapplication>
+        <tile>
+            <square70x70logo src="' . $this->getFileNamePngXml(" 70
+            ") . '"/>
+            <square150x150logo src="' . $this->getFileNamePngXml(" 150
+            ") . '"/>
+            <square310x310logo src="' . $this->getFileNamePngXml(" 310
+            ") . '"/>
+            <TileColor>#ffffff</TileColor>
+        </tile>
+    </msapplication>
+</browserconfig>');
+        fclose($fp);
     }
 }
+

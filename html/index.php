@@ -5,14 +5,9 @@ include_once "core/classes/Utils.php";
 <html lang="pt-BR">
 <body>
 
-<?php
-if (!Utils::verifyPermissions()) {
-    echo "Permissions writable Denied!!<br>" ;
-}
-?>
-
 <a href="core/GenerateFavicon.php">Favicon</a>
 <a href="core/GenerateMiniThumb.php">Thumbnail</a>
+<a href="core/TrimImage.php">Trim</a>
 
 </body>
 </html>
